@@ -1,72 +1,107 @@
-const breedSelect = document.querySelector('.breed-select');
-const divEl = document.querySelector('.cat-info');
+export { fetchBreeds, fetchCatByBreed };
 
-const API =
-  'live_5NANMg4XRrrOIL3HUs9kaEBTrAlewr3Kw3olyERmPmG2LdLlwWaOJD77BMipR5JT';
-
-breedSelect.addEventListener('change', onChangeSelect);
-
-async function onChangeSelect(event) {
-  divEl.innerHTML = '';
-  const breed = event.target.value;
-  console.log(breed);
-  try {
-    const breedDesc = await fetchBreedDesc(breed);
-    renderBreedDesc(breedDesc);
-  } catch (error) {
-    console.log(error);
-  }
-}
-
-fetchAndRenderBreeds();
-
-async function fetchAndRenderBreeds() {
-  try {
-    const breeds = await fetchBreeds();
-    renderBreedsSelect(breeds);
-  } catch (error) {
-    console.log(error);
-  }
-}
+const BASE_URL = 'https://api.thecatapi.com/v1/';
+const BREEDS_ENDPOINT = 'breeds';
+const IMAGES_ENDPOINT = 'images/search';
+const KEY ='live_5NANMg4XRrrOIL3HUs9kaEBTrAlewr3Kw3olyERmPmG2LdLlwWaOJD77BMipR5JT';
 
 function fetchBreeds() {
-  return fetch(`https://api.thecatapi.com/v1/breeds?api_key=${API}`)
-    .then(response => {
+  return fetch(`${BASE_URL}${BREEDS_ENDPOINT}?api_key=${KEY}`).then(
+    response => {
       if (!response.ok) {
-        throw new Error(response.status);
+        throw new Error(response.statusText);
       }
       return response.json();
-    })
-    .catch(error => {
-      throw new Error(error);
-    });
+    }
+  );
 }
 
-function fetchBreedDesc(breed) {
+function fetchCatByBreed(breedId) {
   return fetch(
-    `https://api.thecatapi.com/v1/images/search?breed_id=${breed}&api_key=${API}`
-  )
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(response.status);
-      }
-      return response.json();
-    })
-    .catch(error => {
-      throw new Error(error);
-    });
+    `${BASE_URL}${IMAGES_ENDPOINT}?api_key=${KEY}&breed_ids=${breedId}`
+  ).then(response => {
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+    return response.json();
+  });
 }
 
-function renderBreedsSelect(cats) {
-  const markup = cats
-    .map(cat => {
-      return `<option value="${cat.id}">${cat.name}</option>`;
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
+import 'slim-select/dist/slimselect.css';
+
+import SlimSelect from 'slim-select';
+
+const refs = {
+  breedSelect: document.querySelector('select.breed-select'),
+  catInfo: document.querySelector('.cat-info'),
+  loader: document.querySelector('.loader'),
+};
+
+refs.breedSelect.classList.add('is-hidden');
+
+fetchBreeds()
+  .then(data => {
+    renderBreedSelect(data);
+    new SlimSelect({
+      select: 'select.breed-select',
+      events: {
+        afterChange: newVal => {
+          onBreedSelect(newVal);
+        },
+      },
+    });
+    refs.loader.classList.add('is-hidden');
+    refs.breedSelect.classList.remove('is-hidden');
+  })
+  .catch(showError);
+
+function renderBreedSelect(data) {
+  refs.breedSelect.innerHTML = markupBreedSelect(data);
+}
+
+function markupBreedSelect(arr) {
+  return arr
+    .map(breed => {
+      return `<option value="${breed.id}">${breed.name}</option>`;
     })
     .join('');
-  breedSelect.innerHTML = markup;
 }
 
-function renderBreedDesc(breed) {
-  const markup = `<img class="cat-picture" width=400 src="${breed[0].url}" alt="${breed[0].id}">`;
-  divEl.innerHTML = markup;
+function onBreedSelect(evt) {
+  const selectedBreedId = evt[0].value;
+  clearCatInfo();
+  refs.loader.classList.remove('is-hidden');
+
+  fetchCatByBreed(selectedBreedId)
+    .then(data => {
+      renderCatInfo(data[0]);
+      refs.loader.classList.add('is-hidden');
+    })
+    .catch(showError);
+}
+
+function renderCatInfo(cat) {
+  refs.catInfo.innerHTML = markupCatInfo(cat, cat.breeds[0]);
+}
+
+function markupCatInfo({ url }, { name, description, temperament }) {
+  return `<img src="${url}" alt="${name}" width="40%"/>
+      <div class="cat-card">
+        <h2 class="cat-title">${name}</h2>
+        <p class="cat-descr">${description}</p>
+        <p class="cat-temperament">
+          <b>Temperament: </b>
+          ${temperament}
+        </p>
+      </div>`;
+}
+
+function clearCatInfo() {
+  refs.catInfo.innerHTML = '';
+}
+
+function showError() {
+  refs.loader.classList.add('is-hidden');
+  Notify.failure('Oops! Something went wrong! Try reloading the page!');
 }
