@@ -47,12 +47,12 @@ function markupBreedSelect(arr) {
 async function onBreedSelect(evt) {
   const selectedBreedId = evt[0].value;
   clearCatInfo();
-  showLoader(); // Показати анімацію загрузки
+  showLoader();
 
   try {
     const data = await fetchCatByBreed(selectedBreedId);
     renderCatInfo(data[0]);
-    hideLoader(); // Приховати анімацію загрузки
+    hideLoader();
   } catch (error) {
     showError();
   }
@@ -79,7 +79,7 @@ function clearCatInfo() {
 }
 
 function showError() {
-  hideLoader(); // Приховати анімацію загрузки
+  hideLoader();
   Notify.failure('Oops! Something went wrong! Try reloading the page!');
 }
 
