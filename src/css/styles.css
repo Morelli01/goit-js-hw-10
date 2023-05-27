@@ -10,19 +10,30 @@ body {
     margin-bottom: 20px;
 }
 
-.loader {
-    display: none;
-    color: #888;
-}
 
 .error {
     display: none;
     color: red;
 }
 
+.loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+}
+
+.loader.is-hidden {
+    display: none;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
 .cat-info {
     margin-top: 20px;
-}
+}}}
+
 
 .cat-picture {
     width: 400px;

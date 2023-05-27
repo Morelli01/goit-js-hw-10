@@ -1,34 +1,8 @@
-export { fetchBreeds, fetchCatByBreed };
-
-const BASE_URL = 'https://api.thecatapi.com/v1/';
-const BREEDS_ENDPOINT = 'breeds';
-const IMAGES_ENDPOINT = 'images/search';
-const KEY ='live_5NANMg4XRrrOIL3HUs9kaEBTrAlewr3Kw3olyERmPmG2LdLlwWaOJD77BMipR5JT';
-
-function fetchBreeds() {
-  return fetch(`${BASE_URL}${BREEDS_ENDPOINT}?api_key=${KEY}`).then(
-    response => {
-      if (!response.ok) {
-        throw new Error(response.statusText);
-      }
-      return response.json();
-    }
-  );
-}
-
-function fetchCatByBreed(breedId) {
-  return fetch(
-    `${BASE_URL}${IMAGES_ENDPOINT}?api_key=${KEY}&breed_ids=${breedId}`
-  ).then(response => {
-    if (!response.ok) {
-      throw new Error(response.statusText);
-    }
-    return response.json();
-  });
-}
-
+import { fetchBreeds, fetchCatByBreed } from './js/cat-api';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
+import './css/styles.css';
 import 'slim-select/dist/slimselect.css';
+
 import SlimSelect from 'slim-select';
 
 const refs = {
@@ -39,8 +13,9 @@ const refs = {
 
 refs.breedSelect.classList.add('is-hidden');
 
-fetchBreeds()
-  .then(data => {
+async function initialize() {
+  try {
+    const data = await fetchBreeds();
     renderBreedSelect(data);
     new SlimSelect({
       select: 'select.breed-select',
@@ -52,8 +27,10 @@ fetchBreeds()
     });
     refs.loader.classList.add('is-hidden');
     refs.breedSelect.classList.remove('is-hidden');
-  })
-  .catch(showError);
+  } catch (error) {
+    showError();
+  }
+}
 
 function renderBreedSelect(data) {
   refs.breedSelect.innerHTML = markupBreedSelect(data);
@@ -67,17 +44,18 @@ function markupBreedSelect(arr) {
     .join('');
 }
 
-function onBreedSelect(evt) {
+async function onBreedSelect(evt) {
   const selectedBreedId = evt[0].value;
   clearCatInfo();
-  refs.loader.classList.remove('is-hidden');
+  showLoader(); // Показати анімацію загрузки
 
-  fetchCatByBreed(selectedBreedId)
-    .then(data => {
-      renderCatInfo(data[0]);
-      refs.loader.classList.add('is-hidden');
-    })
-    .catch(showError);
+  try {
+    const data = await fetchCatByBreed(selectedBreedId);
+    renderCatInfo(data[0]);
+    hideLoader(); // Приховати анімацію загрузки
+  } catch (error) {
+    showError();
+  }
 }
 
 function renderCatInfo(cat) {
@@ -101,6 +79,16 @@ function clearCatInfo() {
 }
 
 function showError() {
-  refs.loader.classList.add('is-hidden');
+  hideLoader(); // Приховати анімацію загрузки
   Notify.failure('Oops! Something went wrong! Try reloading the page!');
 }
+
+function showLoader() {
+  refs.loader.classList.remove('is-hidden');
+}
+
+function hideLoader() {
+  refs.loader.classList.add('is-hidden');
+}
+
+initialize();
