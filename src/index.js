@@ -29,7 +29,6 @@ function fetchCatByBreed(breedId) {
 
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import 'slim-select/dist/slimselect.css';
-
 import SlimSelect from 'slim-select';
 
 const refs = {
